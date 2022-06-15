@@ -8,4 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Aura/Doyle/Scenes/LauncherDoyle.unity
     guid: f6cb93f4ab0218e44b130eee9f6948ce
+  - enabled: 1
+    path: Assets/_Aura/Penny/Scenes/GameScene.unity
+    guid: ff363aed36c834f4891b9782d8039f65
   m_configObjects: {}

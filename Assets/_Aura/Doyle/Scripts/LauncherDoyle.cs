@@ -7,6 +7,9 @@ using Photon.Realtime;
 
 public class LauncherDoyle : MonoBehaviourPunCallbacks
 {
+    public GameObject startButton;
+    public GameObject enterNamePanel;
+    public InputField enterNameInput;
     public GameObject roomBrowserPanel;
     public RoomButtonScript roomButton;
     public GameObject errorPanel;
@@ -16,8 +19,12 @@ public class LauncherDoyle : MonoBehaviourPunCallbacks
     public GameObject menuButtons;
     public GameObject createRoomPanel;
     public InputField roomNameInput;
+    public Text playerNameText;
 
+    private List<Text> allPlayerNames = new List<Text>();
     private List<RoomButtonScript> roomButtonList = new List<RoomButtonScript>();
+    private bool hasSetNickname;
+    private string levelToJoin = "GameScene";
 
     public static LauncherDoyle Instance;
     private void Awake()
@@ -33,6 +40,7 @@ public class LauncherDoyle : MonoBehaviourPunCallbacks
 
     public void CloseMenus()
     {
+        enterNamePanel.SetActive(false);    
         roomBrowserPanel.SetActive(false);
         errorPanel.SetActive(false);
         roomPanel.SetActive(false);
@@ -97,16 +105,66 @@ public class LauncherDoyle : MonoBehaviourPunCallbacks
     {
         Application.Quit();
     }
+
+    public void SetNickname()
+    {
+        if (!string.IsNullOrEmpty(enterNameInput.text))
+        {
+            PhotonNetwork.NickName = enterNameInput.text;
+
+            PlayerPrefs.SetString("playerName",enterNameInput.text);
+
+            CloseMenus();
+            menuButtons.SetActive(true);
+            hasSetNickname = true;
+        }
+    }
+
+    public void StartGame()
+    {
+        PhotonNetwork.LoadLevel(levelToJoin);
+    }
     #region Photon Callbacks
     public override void OnConnectedToMaster()
     {
         PhotonNetwork.JoinLobby();
+
+        PhotonNetwork.AutomaticallySyncScene = true; //other players enter the same scene if they are in the same room
+    }
+
+    public override void OnMasterClientSwitched(Player newMasterClient)
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            startButton.SetActive(true);
+        }
+        else
+        {
+            startButton.SetActive(false);
+        }
     }
 
     public override void OnJoinedLobby()
     {
         CloseMenus();
         menuButtons.SetActive(true);
+
+        PhotonNetwork.NickName = Random.Range(0, 1000).ToString();
+
+        if (!hasSetNickname)
+        {
+            CloseMenus();
+            enterNamePanel.SetActive(true);
+
+            if (PlayerPrefs.HasKey("playerName"))
+            {
+                enterNameInput.text = PlayerPrefs.GetString("playerName");
+            }
+        }
+        else
+        {
+            PhotonNetwork.NickName = PlayerPrefs.GetString("playerName");
+        }
     }
 
     public override void OnJoinedRoom()
@@ -114,6 +172,50 @@ public class LauncherDoyle : MonoBehaviourPunCallbacks
         CloseMenus();
         roomPanel.SetActive(true);
         roomNameTxt.text = PhotonNetwork.CurrentRoom.Name;
+        ListAllPlayers();
+
+        if (PhotonNetwork.IsMasterClient)
+        {
+            startButton.SetActive(true);
+        }
+        else
+        {
+            startButton.SetActive(false);
+        }
+    }
+
+    private void ListAllPlayers()
+    {
+        foreach(var playerName in allPlayerNames)
+        {
+            Destroy(playerName.gameObject);
+        }
+        allPlayerNames.Clear();
+
+        Player[] players = PhotonNetwork.PlayerList;
+        playerNameText.gameObject.SetActive(false);
+        for(int i = 0; i < players.Length; i++)
+        {
+            Text newPlayerLabel = Instantiate(playerNameText, playerNameText.transform.parent);
+            newPlayerLabel.text = players[i].NickName;
+            newPlayerLabel.gameObject.SetActive(true);
+
+            allPlayerNames.Add(newPlayerLabel);
+        }
+    }
+
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        Text newPlayerLabel = Instantiate(playerNameText, playerNameText.transform.parent);
+        newPlayerLabel.text = newPlayer.NickName;
+        newPlayerLabel.gameObject.SetActive(true);
+
+        allPlayerNames.Add(newPlayerLabel);
+    }
+
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        ListAllPlayers();
     }
 
     public override void OnCreateRoomFailed(short returnCode, string message)
