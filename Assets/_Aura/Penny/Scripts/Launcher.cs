@@ -67,6 +67,6 @@ public class Launcher : MonoBehaviourPunCallbacks
     public override void OnJoinedRoom()
     {
         infoText.text += "\nJoined Room with " + PhotonNetwork.CurrentRoom.PlayerCount + " players.";
-        //PhotonNetwork.LoadLevel(1);
+        PhotonNetwork.LoadLevel(1);
     }
 }
