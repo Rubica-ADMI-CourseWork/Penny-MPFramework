@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField]float lookSensitivityMultiplier;
     [SerializeField] float maxLookUp, maxLookDown;
     [SerializeField] Transform eyePosition;
+    [SerializeField] GameObject impactVFX;
 
     CharacterController characterController;
     Vector2 inputFromKeyboard;
@@ -20,6 +21,9 @@ public class PlayerController : MonoBehaviour
     float headRotStore;
     float bodyRotStore;
 
+    [SerializeField] float fireRate;
+    float fireTimer;
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -28,6 +32,11 @@ public class PlayerController : MonoBehaviour
     }
     private void Update()
     {
+        fireTimer -= Time.deltaTime;
+        if (Input.GetMouseButton(0) && fireTimer < 0)
+        {
+            ShootGun();
+        }
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             Cursor.lockState = CursorLockMode.None;
@@ -38,6 +47,16 @@ public class PlayerController : MonoBehaviour
         Move();
     }
 
+    private void ShootGun()
+    {
+        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f,0f));
+        if (Physics.Raycast(ray,out RaycastHit hitInfo, 1000))
+        {
+            var vfx = Instantiate(impactVFX,hitInfo.point,Quaternion.identity);
+            Destroy(vfx,0.5f);
+        }
+        fireTimer = fireRate;
+    }
     private void Look()
     {
         inputFromMouse = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
